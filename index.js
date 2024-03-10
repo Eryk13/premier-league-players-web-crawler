@@ -23,7 +23,6 @@ const urls = {
     "Tottenham Hotspur": "https://www.premierleague.com/clubs/21/Tottenham-Hotspur/squad?se=578",
     "West Ham United": "https://www.premierleague.com/clubs/25/West-Ham-United/squad?se=578",
     "Wolverhampton Wanderers": "https://www.premierleague.com/clubs/38/Wolverhampton-Wanderers/squad?se=578"
-
 }
 
 async function crawl(url, club) {
@@ -31,14 +30,14 @@ async function crawl(url, club) {
     const players = [];
     try {
         await driver.get(url);
+        await driver.sleep(2000);
         const elements = await driver.findElements(By.className('stats-card__container'));
         for(let e of elements) {
-            const firstName = await e.findElement(By.className('stats-card__player-first')).getText();
-            const lastName = await e.findElement(By.className('stats-card__player-last')).getText();
+            const name = await e.findElement(By.className('stats-card__player-name')).getText();
             const number = await e.findElement(By.className('stats-card__squad-number u-hide-mob-l')).getText();
             const position = await e.findElement(By.className('stats-card__player-position')).getText();
             const country = await e.findElement(By.className('stats-card__player-country')).getText();
-            players.push({firstName, lastName, number, position, country, club});
+            players.push({name: name.replace(/(\r\n|\n|\r)/gm, " "), number, position, country, club});
         }
     } catch(e) {
         console.error(e)
@@ -54,7 +53,7 @@ async function crawl(url, club) {
     for(const url in urls) {
         players = players.concat(await crawl(urls[url], url));
     }
-    fs.writeFile('players.csv', JSON.stringify(players), 'utf8', function (err) {
+    fs.writeFile('players.csv', csvString(players), 'utf8', function (err) {
         if (err) {
             console.log('Some error occured - file either not saved or corrupted file saved.');
         } else{
@@ -62,6 +61,15 @@ async function crawl(url, club) {
         }
     });
 })()
+
+function csvString(arr) {
+    let str = "name, number, position, country, club \n";
+    for(let item of arr) {
+        str += item.name+ ", " + item.number + ", " +
+            item.position + ", " + item.country + ", " + item.club + "\n";
+    }
+    return str;
+}
 
 
 
